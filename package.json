@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "build": "vite build",
     "migrate": "node src/migrations/migrate.js",
     "seed": "node src/seeds/seed.js",
     "setup": "npm run migrate && npm run seed"
