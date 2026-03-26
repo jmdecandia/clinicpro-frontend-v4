@@ -122,25 +122,24 @@ useEffect(() => {
   };
 
 const handleAddIncome = async () => {
-  try {
-    // 1. Crear el pago SIEMPRE
+    try {
+      // 1. Crear el pago SIEMPRE
+      const res = await paymentApi.create({
+        ...incomeForm,
+        type: 'INCOME',
+        paidAt: new Date().toISOString(),
+        method: incomeForm.method as any,
+        currency: incomeForm.currency as any,
+      });
 
-await paymentApi.create({
-  ...incomeForm,
-  type: 'INCOME',
-  paidAt: new Date().toISOString(),
-  method: incomeForm.method as any,
-  currency: incomeForm.currency as any,
-});
-
+      // 2. Aplicar a deudas si existen
+      try {
         let remainingPayment = Number(incomeForm.amount || 0);
-
         const pendingDebts = (res.data.debts || []).filter(
-          (d) => d.status === 'PENDING' || d.status === 'PARTIAL'
+          (d: any) => d.status === 'PENDING' || d.status === 'PARTIAL'
         );
 
         for (const debt of pendingDebts) {
-	console.log('ANTES', debt);
           if (remainingPayment <= 0) break;
 
           const amountToApply = Math.min(
@@ -148,57 +147,31 @@ await paymentApi.create({
             remainingPayment
           );
 
-await debtApi.update(debt.id, {
-  amountPaid: (debt.amountPaid || 0) + amountToApply,
-});
+          await debtApi.update(debt.id, {
+            amountPaid: (debt.amountPaid || 0) + amountToApply,
+          });
 
           remainingPayment -= amountToApply;
         }
       } catch (e) {
         console.error('Error applying payment to debt', e);
       }
-    }
 
-    // 3. UI
-    toast.success('Ingreso registrado');
-    setIsIncomeDialogOpen(false);
-    setIncomeForm({
-      patientId: '',
-      amount: 0,
-      method: 'CASH',
-      currency: 'UYU',
-      concept: '',
-      notes: '',
-    });
-
-    loadData();
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Error al registrar ingreso');
-  }
-};
-
-  const handleAddExpense = async () => {
-    try {
-      await paymentApi.create({
-        ...expenseForm,
-        type: 'EXPENSE',
-        paidAt: new Date().toISOString(),
-        method: expenseForm.method as 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'MERCADO_PAGO' | 'TRANSFER' | 'CHECK' | 'OTHER',
-        currency: expenseForm.currency as 'UYU' | 'USD' | 'ARS' | 'BRL' | 'EUR',
-      });
-      toast.success('Egreso registrado');
-      setIsExpenseDialogOpen(false);
-      setExpenseForm({
-        providerId: '',
+      // 3. UI
+      toast.success('Ingreso registrado');
+      setIsIncomeDialogOpen(false);
+      setIncomeForm({
+        patientId: '',
         amount: 0,
         method: 'CASH',
         currency: 'UYU',
         concept: '',
         notes: '',
       });
+
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Error al registrar egreso');
+      toast.error(error.response?.data?.error || 'Error al registrar ingreso');
     }
   };
 
